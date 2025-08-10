@@ -1,0 +1,318 @@
+=========Swtchers SW01,SW02,SW03,SW04,SW05=========
+
+vlan 10
+name CIS
+ex
+vlan 20
+name NST
+ex
+vlan 30
+name SOFT
+ex
+vlan 40
+name MAC
+ex
+
+==========SW01========
+int range fa0/1 - 24
+switchport mode access
+switchport access vlan 10
+ex
+int g0/1
+switchport mode trunk
+switchport trunk allowed vlan all
+
+
+===========SW02========
+int range fa0/1 - 6
+switchport mode access
+switchport access vlan 10
+ex
+
+int range fa0/7 - 24
+switchport mode access
+switchport access vlan 20
+ex
+
+int g0/2
+switchport mode trunk
+switchport trunk allowed vlan all
+
+
+=============SW03========
+int range fa0/1 - 14
+switchport mode access
+switchport access vlan 20
+ex
+
+int range fa0/15 - 24
+switchport mode access
+switchport access vlan 30
+ex
+
+int g0/1
+switchport mode trunk
+switchport trunk allowed vlan all
+
+
+=============SW04========
+int range fa0/1 - 21
+switchport mode access
+switchport access vlan 30
+ex
+
+int range fa0/22 - 24
+switchport mode access
+switchport access vlan 40
+ex
+
+int g0/2
+switchport mode trunk
+switchport trunk allowed vlan all
+
+
+============SW05========
+int range fa0/1 - 24
+switchport mode access
+switchport access vlan 40
+ex
+
+int g0/1
+switchport mode trunk
+switchport trunk allowed vlan all
+
+
+
+======================admin switch============================
+
+enable
+onfigure terminal
+
+hostname admin_switch
+
+vlan 11
+name ADMIN
+exit
+
+interface range fa0/1 - 14
+switchport mode access
+switchport access vlan 11
+exit
+
+interface g0/1
+switchport mode trunk
+switchport trunk allowed vlan 1,11
+no shutdown
+exit
+
+end
+write memory
+
+
+
+==================Port Security Admin-Switch======================
+
+int range fa0/1 - 14
+switchport port-security
+switchport port-security maximum 1
+switchport port-security mac-address sticky
+switchport port-security violation restrict
+ex
+
+int range fa0/15 - 24 , gi0/2
+shutdown
+
+ex
+do wr
+
+
+
+
+=====================admin router=======================
+
+enable
+configure terminal
+
+interface g0/0
+no shutdown
+
+interface g0/0.11
+encapsulation dot1Q 11
+ip address 192.168.1.129 255.255.255.240
+ip helper-address 192.168.1.150
+no shutdown
+exit
+
+interface s0/0/0
+ip address 100.0.1.1 255.255.255.252
+no shutdown
+exit
+
+interface s0/0/1
+ip address 100.0.3.1 255.255.255.252
+no shutdown
+exit
+
+interface g0/1
+ip address 192.168.1.149 255.255.255.252
+no shutdown
+exit
+
+router ospf 1
+network 192.168.1.128 0.0.0.15 area 0
+network 192.168.1.148 0.0.0.3 area 0
+network 100.0.1.0 0.0.0.3 area 0
+network 100.0.3.0 0.0.0.3 area 0
+exit
+
+end
+write memory
+
+
+=============AAA with tacacs================
+
+enable secret adminclass
+
+tacacs-server host 192.168.1.149 key mykeyadmin
+
+aaa new-model
+aaa authentication login authadmin group tacacs+ local
+
+username admin secret passadmin
+
+line vty 0 4
+login authentication authadmin
+transport input telnet
+
+exit
+do wr
+
+
+
+
+================Admin section block using standard ACL (Router-Admin)====================
+
+
+ip access-list standard LABS_BLOCK
+
+deny 192.168.1.0 0.0.0.31
+deny 192.168.1.32 0.0.0.31
+deny 192.168.1.64 0.0.0.31
+deny 192.168.1.96 0.0.0.31
+permit any
+ex
+
+int g0/0.11
+ip access-group LABS_BLOCK out
+ex
+
+==============WEB(80,443 protocols) BLOCK CIS LAB section block using extended ACL (Router-Admin)==================
+
+
+ip access-list extended WEB_BLOBK_CIS_LAB
+
+deny tcp 192.168.1.0 0.0.0.31 host 192.168.1.150 eq 80
+deny tcp 192.168.1.0 0.0.0.31 host 192.168.1.150 eq 443
+permit tcp any any
+permit ip any any
+ex
+
+int g0/1
+ip access-group WEB_BLOBK_CIS_LAB out
+ex
+
+
+
+
+
+=====================router main=========================
+
+enable
+configure terminal
+
+interface g0/1
+no shutdown
+
+interface g0/1.10
+encapsulation dot1Q 10
+ip address 192.168.1.1 255.255.255.224
+ip helper-address 192.168.1.150
+no shutdown
+exit
+
+interface g0/1.20
+encapsulation dot1Q 20
+ip address 192.168.1.33 255.255.255.224
+ip helper-address 192.168.1.150
+no shutdown
+exit
+
+interface g0/1.30
+encapsulation dot1Q 30
+ip address 192.168.1.65 255.255.255.224
+ip helper-address 192.168.1.150
+no shutdown
+exit
+
+interface g0/1.40
+encapsulation dot1Q 40
+ip address 192.168.1.97 255.255.255.224
+ip helper-address 192.168.1.150
+no shutdown
+exit
+
+interface s0/0/0
+ip address 100.0.1.2 255.255.255.252
+no shutdown
+exit
+
+interface s0/0/1
+ip address 100.0.2.1 255.255.255.252
+no shutdown
+exit
+
+router ospf 1
+network 192.168.1.0 0.0.0.31 area 0
+network 192.168.1.32 0.0.0.31 area 0
+network 192.168.1.64 0.0.0.31 area 0
+network 192.168.1.96 0.0.0.31 area 0
+network 100.0.1.0 0.0.0.3 area 0
+network 100.0.2.0 0.0.0.3 area 0
+exit
+
+end
+write memory
+
+
+
+
+==========================backup-router ospf==============================
+
+enable
+configure terminal
+hostname Backup-Router
+
+interface s0/0/0
+ip address 100.0.3.2 255.255.255.252
+no shutdown
+exit
+
+interface s0/0/1
+ip address 100.0.2.2 255.255.255.252
+no shutdown
+exit
+
+router ospf 1
+network 100.0.3.0 0.0.0.3 area 0
+network 100.0.2.0 0.0.0.3 area 0
+exit
+
+end
+write memory
+
+
+
+
+
+
+
