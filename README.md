@@ -63,7 +63,4 @@
   <p>📄 This project is licensed under the MIT License.</p>
 
   <hr />
-
-  <p>❓ For any questions or contributions, please feel free to open an issue or submit a pull request.</p>
-
   <p><em>👤 Author: Kalhara2000</em></p>
